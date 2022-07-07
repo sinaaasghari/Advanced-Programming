@@ -23,7 +23,7 @@ string edit_menu = "1.Name\n2.ID\n3.Account Number\n4.IBAN\n5.Debt\n6.Account Ba
 
 
 
-
+//Stock class
 class stock{
     private:
         string symbol;
@@ -64,7 +64,7 @@ class account{
         double debt;    //bedehi
         double account_balance;    //mojoudi
         double asset;    //majmo darayi dar sabad saham
-        vector<pair<string, int>> stocks;
+        vector<pair<string, int>> stocks;    //Stores user's stocks
         string is_verified;
     public:
         account(string _user_name, string _password, string verification){
@@ -72,6 +72,7 @@ class account{
             password = _password;
             is_verified = verification;
         }
+        //This function sets user's all information
         void set(){
             string _debt, _account_balance, _asset;
             ifstream user("./accounts/"+user_name+".txt");
@@ -82,27 +83,24 @@ class account{
             getline(user, _debt);
             getline(user, _account_balance);
             getline(user, _asset);
-            cout << 1 << endl;
             debt = stod(_debt);
-            cout << 2 << endl;
             account_balance = stod(_account_balance);
-            cout << 3 << endl;
             asset = stod(_asset);
-            string line, stock;
+            string line, stock_symbol;
             int count;
             while(!user.eof()){
-                for(int i = 0; getline(user, line, ','); i++){
-                    if(i==0){
-                        stock = line;
+                getline(user, line);
+                for(int i = 0; i < line.length(); i++){
+                    if(line[i] == ','){
+                        stock_symbol = line.substr(0, i);
+                        count = stoi(line.substr(i+1, line.length() - i -1));
+                        stocks.push_back(make_pair(stock_symbol, count));
                     }
-                    else{
-                        count = stoi(line);
-                    }
-                    stocks.push_back(make_pair(stock, count));
                 }
             }
             user.close();
         }
+        //This function gets users's information and evaluates information
         void verify(string _name, string _ID, string _account_number, 
                     string _IBAN, double _debt, double _account_balance,double _asset){
             if(_name.length()<=40 && _ID.length()==10 && _account_number.length()==10 && 
@@ -137,11 +135,12 @@ class account{
                 users.close();
             }
             else{
-                cout << "Your information is not verified!\n"; //eslah shavad
+                cout << "Your information is not verified!\n"; 
                 sleep(3);
                 is_verified = "0";
             }
         }
+        //This function Edits users infomations
         void edit(){
             int command;
             while(true){
@@ -227,6 +226,7 @@ class account{
                 }
             }
         }
+        //Set and Get functions
         string verified(){
             return is_verified;
         }
@@ -259,7 +259,9 @@ class account{
         }
 };
 void market(account &Account, vector<stock> &stocks);
+//This function is main flow of program
 void  main_stream(account &Account){
+    //Here we load all stocks data and save it in a vector
     ifstream read_stocks("data.csv");
     vector<stock> stocks;
     string line, symbol, shortname, _price, _marketcap;
@@ -291,6 +293,7 @@ void  main_stream(account &Account){
     }
     read_stocks.close();
     while(true){
+        //For verified accounts
         if(Account.verified()=="1"){
             Account.set();
             int command;
@@ -299,14 +302,16 @@ void  main_stream(account &Account){
                 cout << main_menu_verified;
                 cin >> command;
                 system("cls");
+                //Edit information
                 if(command == 1){
                     Account.edit();
                 }
+                //Withraw and Deposit
                 else if(command == 2){
                     int cmd;
                     cout <<"1.Withraw\n2.Deposit\n3.Back\nEnter your command : ";
-                    system("cls");
                     cin >> cmd;
+                    system("cls");
                     if(cmd==1){
                         double amount;
                         cout << "How much : ";
@@ -332,13 +337,15 @@ void  main_stream(account &Account){
                         }
                     }
                 }
+                //Opens market
                 else if(command == 3){
                     market(Account, stocks);
                 }
+                //Log out and save data
                 else if(command == 4){
                     ofstream user("./accounts/" + Account.getUserName() + ".txt", ios::out);
                     user << Account.getName() << "\n" << Account.getID() << "\n" << Account.getAccountNumber() << "\n" << Account.getIBAN() <<"\n";
-                    user << Account.getDebt() << "\n" << Account.getAccountBalance() << "\n" << Account.getAsset();
+                    user << Account.getDebt() << "\n" << Account.getAccountBalance() << "\n" << Account.getAsset() << '\n';
                     for(auto x : Account.getPortfolio()){
                         user << x.first << ',' << x.second << '\n'; 
                     }
@@ -347,6 +354,7 @@ void  main_stream(account &Account){
                 }
             }
         }
+        //For not verified accounts
         else{
             int command;
             while(true){
@@ -359,6 +367,7 @@ void  main_stream(account &Account){
                     sleep(2);
                     continue;
                 }
+                //Get and verifiy information
                 else if(command==1){
                     string name;
                     string ID;    //code melli
@@ -384,6 +393,7 @@ void  main_stream(account &Account){
                     Account.verify(name, ID, account_number, IBAN, debt, account_balance, asset);
                     break;
                 }
+                //Withraw and Deposit
                 else if(command==2){
                     int cmd;
                     cout <<"1.Withraw\n2.Deposit\n3.Back\nEnter your command : ";
@@ -413,6 +423,7 @@ void  main_stream(account &Account){
                         }
                     }
                 }
+                //Log out and save data
                 else if(command == 3){
                     ofstream user("./accounts/" + Account.getUserName() + ".txt", ios::out);
                     user << Account.getName() << "\n" << Account.getID() << "\n" << Account.getAccountNumber() << "\n" << Account.getIBAN() <<"\n";
@@ -427,10 +438,7 @@ void  main_stream(account &Account){
         }
     }
 }
-
-
-
-
+//Market Function
 void market(account &Account, vector<stock> &stocks){
     system("cls");
     int command;
@@ -439,6 +447,7 @@ void market(account &Account, vector<stock> &stocks){
         cout << market_menu;
         cin >> command;
         system("cls");
+        //Buy an specific stock
         if(command==1){
             string symbol;
             int count, flag = 0;
@@ -461,8 +470,7 @@ void market(account &Account, vector<stock> &stocks){
                             Account.getPortfolio().push_back(make_pair(symbol, count));
                         }
                         Account.getAccountBalance() -= count*x.getPrice();
-                        //ofstream buy_stock("./accounts/" + Account.getUserName() + ".txt", ios::app);
-                        //buy_stock << symbol << ',' << count << '\n';
+                        Account.getAsset() += count * x.getPrice();
                     }
                     else if(Account.getAccountBalance() < count * x.getPrice() &&
                      Account.getAccountBalance() + (1000000 - Account.getDebt()) >= count*x.getPrice()){
@@ -478,6 +486,7 @@ void market(account &Account, vector<stock> &stocks){
                         }
                         Account.getDebt() += count * x.getPrice() - Account.getAccountBalance();
                         Account.getAccountBalance() = 0;
+                        Account.getAsset() += count * x.getPrice();
                     }
                     else{
                         cout << "You don't have enough money!\n";
@@ -490,6 +499,7 @@ void market(account &Account, vector<stock> &stocks){
                 sleep(3);
             }
         }
+        //Sell an specific stock
         else if(command==2){
             string symbol;
             int count, flag = 0;
@@ -509,6 +519,7 @@ void market(account &Account, vector<stock> &stocks){
                     if(count <= iter->second){
                         income = count * price;
                         Account.getAccountBalance() += income;
+                        Account.getAsset() -= income;
                         iter->second -= count;
                         if(iter->second == 0){
                             Account.getPortfolio().erase(iter);
@@ -527,6 +538,7 @@ void market(account &Account, vector<stock> &stocks){
                 sleep(3);
             }
         }
+        //Shows user's all stocks
         else if(command==3){
             cout << "Your portfolio : \n";
             for(auto x : Account.getPortfolio()){
@@ -539,6 +551,7 @@ void market(account &Account, vector<stock> &stocks){
             }
             system("pause");
         }
+        //Print all stocks in market
         else if(command==4){
             for(auto x : stocks){
                 cout << x.getSymbol() << " " << x.getName() << " " << x.getPrice() << " " << x.getMarketCap() << "\n";
@@ -546,6 +559,7 @@ void market(account &Account, vector<stock> &stocks){
             system("pause");
 
         }
+        //Back to main menu
         else if(command==5){
             return;
         }
@@ -555,7 +569,7 @@ void market(account &Account, vector<stock> &stocks){
 
 
 
-
+//Start function of program
 void start(){
     system("cls");
     int command;
@@ -568,11 +582,11 @@ void start(){
             cout << "command is not correct\n";
             sleep(2);
         }
+        //Login
         else if(command==1){
             string user_name, password;
             int flag = 0;
             cout << "Enter Username : ";
-            
             getline(cin >> ws, user_name);
             cout << "Enter Password : ";
             getline(cin, password);
@@ -596,6 +610,7 @@ void start(){
                 sleep(2);
             }
         }
+        //Sign up
         else if(command==2){
             string user_name, password;
             int flag = 1;
@@ -626,13 +641,12 @@ void start(){
             }
             users.close();
         }
+        //Exit program
         else if(command == 3){
             return;
         }
     }
 }
-
-
 int main(){
     start();
     return 0;
